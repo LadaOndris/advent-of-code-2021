@@ -16,25 +16,19 @@ class Day04(Day):
         games = self.games.copy()
         for call in self.calls:
             games[games == call] = 0
-            game_idx = self._check_win(games)
-            if game_idx is not None:
-                remaining_values = np.sum(games[game_idx])
+            win_games_idx = self._find_win_games(games)
+            if win_games_idx.size != 0:
+                remaining_values = np.sum(games[win_games_idx[0]])
                 return remaining_values * call
         return 0
 
-    def _check_win(self, games) -> int:
+    def _find_win_games(self, games) -> np.ndarray:
         games_t = np.transpose(games, [0, 2, 1])
         sum_rows = np.sum(games, axis=-1)  # [100, 5]
         sum_cols = np.sum(games_t, axis=-1)  # [100, 5]
-        row_wins = np.argmin(sum_rows)
-        col_wins = np.argmin(sum_cols)
-        row_wins_index = np.unravel_index(row_wins, sum_rows.shape)
-        col_wins_index = np.unravel_index(col_wins, sum_cols.shape)
-        if sum_rows[row_wins_index] == 0:
-            return row_wins_index[0]
-        if sum_cols[col_wins_index] == 0:
-            return col_wins_index[0]
-        return None
+        rows_cols_sums = np.concatenate([sum_rows, sum_cols], axis=-1)
+        win_games, win_row_cols = np.where(rows_cols_sums == 0)
+        return win_games
 
     def part_two(self):
         games = self.games.copy()
@@ -43,16 +37,15 @@ class Day04(Day):
         for call in self.calls:
             games[games == call] = 0
 
-            game_idx = self._check_win(games[games_active])
-            while game_idx is not None:
-                if np.sum(games_active) == 1 and game_idx == 0:
+            win_games_idx = self._find_win_games(games[games_active])
+            if win_games_idx.size != 0:
+                if np.sum(games_active) == 1:
                     win_game_idx = np.argmax(games_active)
                     remaining_values = np.sum(games[win_game_idx])
                     return remaining_values * call
 
-                games_active_args = np.argwhere(games_active == True)
-                games_active[games_active_args[game_idx]] = False
-                game_idx = self._check_win(games[games_active])
+                games_active_args = np.argwhere(games_active)
+                games_active[games_active_args[win_games_idx]] = False
 
 
 if __name__ == '__main__':
