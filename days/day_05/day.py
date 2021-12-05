@@ -16,7 +16,7 @@ class Day05(Day):
 
     def _fill_hoz_ver_lines(self, field):
         for coord in self.coords:
-            if coord[0] == coord[2] or coord[1] == coord[3]:
+            if self._is_straight_line(coord):
                 if coord[0] > coord[2]:
                     field[coord[1]:coord[3] + 1, coord[2]:coord[0] + 1] += 1
                 elif coord[1] > coord[3]:
@@ -25,16 +25,21 @@ class Day05(Day):
                     field[coord[1]:coord[3] + 1, coord[0]:coord[2] + 1] += 1
         return field
 
+    def _is_straight_line(self, line_coords):
+        return line_coords[0] == line_coords[2] or line_coords[1] == line_coords[3]
+
     def _fill_diagonals(self, field):
         for coord in self.coords:
-            if coord[0] != coord[2] and coord[1] != coord[3]:
-                x_diff = np.abs(coord[2] - coord[0])
-                # if coord[0] > coord[2]:
-                coeff_x = np.sign(coord[3] - coord[1])
-                coeff_y = np.sign(coord[2] - coord[0])
-                for i in range(x_diff + 1):
-                    field[coord[1] + i * coeff_x, coord[0] + i * coeff_y] += 1
+            if self._is_diagonal_line(coord):
+                x_range = np.abs(coord[2] - coord[0])
+                x_slope = np.sign(coord[3] - coord[1])
+                y_slope = np.sign(coord[2] - coord[0])
+                for i in range(x_range + 1):
+                    field[coord[1] + i * x_slope, coord[0] + i * y_slope] += 1
         return field
+
+    def _is_diagonal_line(self, line_coords):
+        return line_coords[0] != line_coords[2] and line_coords[1] != line_coords[3]
 
     def _count_dangerous_points(self, field):
         return np.sum(np.where(field > 1, 1, 0))
