@@ -1,5 +1,4 @@
 from itertools import permutations
-from typing import List
 
 import numpy as np
 
@@ -16,18 +15,10 @@ class Day08(Day):
         for signal, output in signals_and_outputs:
             self.signal_lines.append(signal.split(' '))
             self.output_lines.append(output.split(' '))
-        self.segments = [6, 2, 5, 5, 4, 5, 6, 3, 7, 6]
-        self.numbers = ['abcefg', 'cf', 'acdeg', 'acdfg', 'bdcf', 'abdfg', 'abdefg', 'acf', 'abcdefg', 'abcdfg']
-        self.expected_segments = [[0, 1, 2, 4, 5, 6],
-                                  [2, 5],
-                                  [0, 2, 3, 4, 6],
-                                  [0, 2, 3, 5, 6],
-                                  [1, 2, 3, 5],
-                                  [0, 1, 3, 5, 6],
-                                  [0, 1, 3, 4, 5, 6],
-                                  [0, 2, 5],
-                                  [0, 1, 2, 3, 4, 5, 6],
-                                  [0, 1, 2, 3, 5, 6]]
+        self.expected_segments = [0b1110111, 0b0100100, 0b1011101,
+                                  0b1101101, 0b0101110, 0b1101011,
+                                  0b1111011, 0b0100101, 0b1111111,
+                                  0b1101111]
 
     def _get_lengths(self, array):
         return np.array([list(map(len, array_item)) for array_item in array])
@@ -38,62 +29,67 @@ class Day08(Day):
         return np.sum(mask)
 
     def part_two(self):
+        signal_lines = self._array_to_binary(self.signal_lines)
+        output_lines = self._array_to_binary(self.output_lines)
+        correct_permutations = self._get_correct_permuations_for_signals(signal_lines)
+        projected_numbers = self._apply_permutations(output_lines, correct_permutations)
+        result = np.sum(projected_numbers)
+        return result
+
+    def _get_correct_permuations_for_signals(self, signal_lines):
         permutations = self._get_permutations()
         correct_permutations = []
 
-        for signals in self.signal_lines:
+        for signals in signal_lines:
             for permutation in permutations:
                 fits = True
                 for signal in signals:
-                    if not self._is_number(signal, permutation):
+                    if not self._is_digit(signal, permutation):
                         fits = False
                         break
                 if fits:
                     correct_permutations.append(permutation)
                     break
+        return correct_permutations
 
-        result = 0
-        for outputs, permutation in zip(self.output_lines, correct_permutations):
-            numbers = ''
+    def _apply_permutations(self, output_lines, permutations):
+        numbers = np.empty(len(output_lines), dtype=np.int32)
+        for i, (outputs, permutation) in enumerate(zip(output_lines, permutations)):
+            number = ''
             for output in outputs:
-                number = self._get_number(output, permutation)
-                numbers += str(number)
-            result += int(numbers)
-        return result
+                digit = self._get_digit(output, permutation)
+                number += str(digit)
+            numbers[i] = int(number)
+        return numbers
 
     def _get_permutations(self):
-        base = "abcdefg"
-        return np.asarray(list(permutations(base)))
+        base = self._to_binary("abcdefg")
+        bin_permutations = np.asarray(list(permutations(base)))
+        return bin_permutations
 
-    def _is_number(self, signal: str, permutation) -> bool:
-        number = self._get_number(signal, permutation)
+    def _array_to_binary(self, array):
+        return [[self._to_binary(a) for a in b] for b in array]
+
+    def _to_binary(self, chars: str):
+        map_dict = 1 << np.arange(7)
+        converted = map_dict[np.array(list(map(ord, chars))) - ord('a')]
+        return converted
+
+    def _is_digit(self, signal: int, permutation) -> bool:
+        number = self._get_digit(signal, permutation)
         if number == -1:
             return False
         return True
 
-    def _get_number(self, char_segments: str, permutation):
-        segments = []
-        for signal_char in char_segments:
-            segment_id = np.argwhere(signal_char == permutation)
-            segments.append(segment_id.squeeze())
-        segments = np.asarray(segments)
-        segments = np.sort(segments)
-        number = self._arg_list_in_list_of_lists(segments, self.expected_segments)
-        return number
-
-    def _arg_list_in_list_of_lists(self, list: List[int], list_of_lists: List[List[int]]) -> int:
-        for i, expected_list in enumerate(list_of_lists):
-            if len(list) != len(expected_list):
-                continue
-            found = True
-            for val1, val2 in zip(list, expected_list):
-                if val1 != val2:
-                    found = False
-                    break
-            if not found:
-                continue
-            return i
-        return -1
+    def _get_digit(self, bin_segments: int, permutation):
+        segments_in_permutation = np.bitwise_and(bin_segments[:, np.newaxis],
+                                                 permutation[np.newaxis, :])  # shape [bin_segments.len, 7]
+        segments_locations = np.argmax(segments_in_permutation, axis=-1)
+        number_representation = np.bitwise_or.reduce(1 << segments_locations)
+        number = np.where(number_representation == self.expected_segments)[0]
+        if number.shape[0] == 0:
+            return -1
+        return number[0]
 
 
 if __name__ == '__main__':
