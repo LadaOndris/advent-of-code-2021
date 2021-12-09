@@ -11,17 +11,15 @@ class Day09(Day):
         self.input = np.array([list(line) for line in self.input_lines]).astype(int)
 
     def _count_larger_neighbours(self):
-        input = self.input
-        output = np.zeros(shape=[input.shape[0] + 2, input.shape[1] + 2])
-        bordered_input = np.full(shape=[input.shape[0] + 2, input.shape[1] + 2], fill_value=9)
-        bordered_input[1:-1, 1:-1] = input
+        padded_input = np.pad(self.input, 1, constant_values=9)
+        output = np.zeros(shape=[self.input.shape[0] + 2, self.input.shape[1] + 2])
 
-        output[:-1, :] += bordered_input[1:, :] > bordered_input[:-1, :]
-        output[1:, :] += bordered_input[:-1, :] > bordered_input[1:, :]
-        output[:, :-1] += bordered_input[:, 1:] > bordered_input[:, :-1]
-        output[:, 1:] += bordered_input[:, :-1] > bordered_input[:, 1:]
+        output[:-1, :] += padded_input[1:, :] > padded_input[:-1, :]
+        output[1:, :] += padded_input[:-1, :] > padded_input[1:, :]
+        output[:, :-1] += padded_input[:, 1:] > padded_input[:, :-1]
+        output[:, 1:] += padded_input[:, :-1] > padded_input[:, 1:]
 
-        return output, bordered_input
+        return output, padded_input
 
     def part_one(self):
         output, bordered_input = self._count_larger_neighbours()
@@ -31,10 +29,7 @@ class Day09(Day):
     def _get_area_sizes(self, array) -> np.ndarray:
         structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
         labeled_areas, num_areas = measurements.label(array, structure)
-        area_sizes = np.zeros(shape=num_areas)
-        for area_idx in range(1, num_areas + 1):
-            count = np.sum(labeled_areas == area_idx)
-            area_sizes[area_idx - 1] = count
+        area_sizes = np.bincount(labeled_areas.reshape(-1))[1:]
         return area_sizes
 
     def _get_three_largest_areas(self, area_sizes):
