@@ -33,7 +33,7 @@ class Day09(Day):
         return area_sizes
 
     def _get_three_largest_areas(self, area_sizes):
-        sorted_area_sizes = np.sort(area_sizes)
+        sorted_area_sizes = np.partition(area_sizes, len(area_sizes) - 3)
         return sorted_area_sizes[-3:]
 
     def part_two(self):
