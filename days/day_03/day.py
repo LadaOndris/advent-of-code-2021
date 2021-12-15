@@ -20,7 +20,6 @@ class Day03(Day):
         bits_sum = np.sum(bit_columns, axis=-1)
         numbers_count = np.shape(bit_columns)[1]
         most_common_bits = np.where(bits_sum >= numbers_count / 2, 1, 0)
-        # least_common_bits = np.where(bits_sum < numbers_count / 2, 1, 0)
         least_common_bits = np.logical_not(most_common_bits)
         return most_common_bits, least_common_bits
 
@@ -47,6 +46,7 @@ class Day03(Day):
         generator_rating = self._to_decimal(generator_candidates[:, 0])
         scrubber_rating = self._to_decimal(scrubber_candidates[:, 0])
         return generator_rating * scrubber_rating
+
 
 if __name__ == '__main__':
     day = Day03()
